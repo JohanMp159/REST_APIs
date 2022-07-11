@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Buscador Shows de TV</title>
+	<style>
+		.grid-fluid{
+			display: grid;
+			grid-template-columns: repeat(auto-fit,minmax(200px, 1fr));
+		}
+		.loader{
+			display: block;
+			margin: auto;
+		}
+	</style>
+</head>
+<body>
+	<h1>Buscador Shows de TV</h1>
+	<input type="search" id="search" placeholder="Buscar Shows de tv" autocomplete="off">
+	<section id="shows" class="grid-fluid"></section>
+	<template id="show-template">
+		<article class="show">
+			<h3></h3>
+			<div></div>
+			<img>
+			<a href=""></a>
+		</article>
+	</template>
+<script>
+	const d = document,
+		  $shows = d.getElementById("shows"),
+		  $template = d.getElementById("show-template").content,
+		  $fragment = d.createDocumentFragment();
+	
+	d.addEventListener("keypress",async (e)=>{
+		if(e.target.matches("#search")){
+			if(e.key === "Enter"){
+				try{
+					$shows.innerHTML = `
+						<img class="loader" src="assets/oval.svg" alt="Cargando">
+					`;
+					
+					let query = e.target.value.toLowerCase(),
+						api = `https://api.tvmaze.com/search/shows?q=${query}`,
+						res = await fetch(api),
+						json = await res.json();
+					
+					console.log(api,res,json);
+					
+					if(!res.ok)throw{status: res.status, statusText: res.statusText};
+					if(json.length === 0){
+						$shows.innerHTML = `<h2>No existen resutlads de shows para el criterio de busqueda: <mark>${query}</mark></h2>`;
+					} else{
+						json.forEach((el)=>{
+							$template.querySelector("h3").textContent = el.show.name;
+							$template.querySelector("div").innerHTML = el.show.summary?el.show.summary:"Sin descripción";
+							$template.querySelector("img").src = el.show.image?el.show.image.medium:"";
+							$template.querySelector("img").alt = el.show.name;
+							$template.querySelector("img").style.maxWidth = "100%";
+							$template.querySelector("a").href = el.show.url?el.show.url:"#";
+							$template.querySelector("a").target = el.show.url?"_black":"_self";
+							$template.querySelector("a").textContent = el.show.url?"ver mas..":"";
+							
+							let $clone = d.importNode($template,true);
+							$fragment.appendChild($clone)
+						})
+						$shows.innerHTML ="";
+						$shows.appendChild($fragment);
+					}
+				}catch(err){
+					console.log(err);
+					let message = err.statusText || "Ocurrió un error";
+					$shows.innerHTML = `<p>Error ${err.status}: ${message} </p>`;
+				}
+			}
+		}
+	})
+</script>	
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Buscador de canciones</title>
+	<style>
+		html{
+			font-family: sans-serif;
+		}
+		img{
+			max-width: 100%;
+			height: auto;
+		}
+		main{
+			display: flex;
+			flex-direction:column-reverse;
+		}
+		.loader{
+			display: none;
+			margin: auto;
+		}
+		.song blockquote{
+			white-space: pre-wrap;
+		}
+		@media screen and (min-width: 800px){
+			main{
+				flex-direction: row;
+			}
+			main >*{
+				padding: 1rem;
+				flex-basis:50%;
+			}
+		}
+	</style>
+</head>
+<body>
+	<h1>Buscador de canciones</h1>
+	<form id="song-search">
+		<input type="text" name="artist" placeholder="Nombre del intérprete" required>
+		<br>
+		<input type="text" name="song" placeholder="Nombre de la canción" required>
+		<br>
+		<input type="submit">
+	</form>
+	<img class="loader" src="assets/oval.svg" alt="Cargando...">
+	<aside class="error"></aside>
+	<main>
+		<article class="artist">
+			<h2>Información del artista</h2>
+		</article>
+		<article class="song">
+			<h2>Letra de la canción</h2>
+		</article>
+	</main>
+<script>
+	const d = document,
+		  $form = d.getElementById("song-search"),
+		  $loader = d.querySelector(".loader"),
+		  $error = d.querySelector(".error"),
+		  $main = d.querySelector("main"),
+		  $artist = d.querySelector(".artist"),
+		  $song = d.querySelector(".song");
+	
+	
+	d.addEventListener("submit", async(e)=>{
+		e.preventDefault();
+		
+		try{
+			$loader.style.display = "block";
+		
+			let artist = e.target.artist.value.toLowerCase(),
+				song = e.target.song.value.toLowerCase(),
+				$artisTemplate = "",
+				$songTemplate = "",
+				artistAPI = `https://theaudiodb.com/api/v1/json/2/search.php?s=${artist}`,
+				songAPI = `https://api.lyrics.ovh/v1/${artist}/${song}`,
+				artistFetch = fetch(artistAPI),
+				songFetch = fetch(songAPI),
+				[artistRes,songRes] = await Promise.all([artistFetch,songFetch]),
+				artistData = await artistRes.json(),
+				songData = await songRes.json();
+			
+			//console.log(artistRes,songRes);
+			console.log(artistData,songData);
+			
+			if(artistData.artists === null){
+			   $artisTemplate =`<h2>No existe el intérprete <mark>${artist}</mark></h2>`
+			   } else {
+				   let artist = artistData.artists[0];
+				   $artisTemplate =`
+						<h2>${artist.strArtist}</h2>
+						<img src="${artist.strArtistThumb}" alt="${artist.strArtist}">
+						<p>${artist.intBornYear} - ${artist.intDiedYear||"Presente"}</p>
+						<p>${artist.strCountry}</p>
+						<p>${artist.strGenre}-${artist.strStyle}<p>
+						<a href="http://${artist.strWebsite}" target="_blank">Sitio Web</a>
+						<p>${artist.strBiographyEN}</p>
+					`;
+			   }
+			
+			if(songData.error){
+				$songTemplate = `<h2>No existe la canción <mark>${song}</mark></h2>`
+			} else {
+				$songTemplate = `
+					<h2>${song.toUpperCase()}</h2>
+					<blockquote>${songData.lyrics}</blockquote>	
+				`;
+			}
+			
+			$loader.style.display = "none";
+			$artist.innerHTML = $artisTemplate;
+			$song.innerHTML = $songTemplate;
+		}catch(err){
+			console.log(err);
+			$loader.style.display = "none";
+			
+		}
+		
+	})
+	
+	
+		  
+</script>
+</body>
+</html>

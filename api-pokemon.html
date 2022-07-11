@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Pokemons</title>
+	<style>
+		html{
+			text-align: center;
+		}
+		.grid-fluid{
+			display: grid;
+			grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+			text-align: center;
+		}
+		.loader{
+			display: block;
+			margin: auto;
+		}
+	</style>
+</head>
+<body>
+	<h1>Pokemons</h1>
+	<nav class="links"></nav>
+	<main class="grid-fluid"></main>
+	
+	<script>
+		const d= document,
+			  $main = d.querySelector("main"),
+			  $links = d.querySelector(".links");
+		
+		let pokeAPI = "https://pokeapi.co/api/v2/pokemon/";
+		
+		async function loadPokemon(url){
+			try{
+				$main.innerHTML = `<img class="loader" src="assets/oval.svg" alt="Cargando...">`
+				
+				let res= await fetch(url),
+					json = await res.json(),
+					$template = "",
+					$prevlink,
+					$nextLink;
+				
+				console.log(json)
+				
+				if(!res.ok)throw{status:res.status,statusText: res.statusText}
+				
+				for(i=0;i<json.results.length;i++){
+					//console.log(json.results[i]);
+					try{
+						let res = await fetch(json.results[i].url),
+							pokemon = await res.json();
+
+						//console.log(res, pokemon);
+						if(!res.ok) throw {status:res.status,statusText: res.statusText}
+						
+						$template += `						
+							<figure>
+								<img src="${pokemon.sprites.front_default}" alt="${pokemon.name}">
+								<figcaption>${pokemon.name}</figcaption>
+							</figure>
+						`;
+					}catch(err){
+						//console.log(err);
+						let message = err.statusText || "Ocurrió un error";
+						$template +=`
+							<figure>
+								<figcaption> ${err.status}: ${message}</figcaption>
+							</figure>
+						`;
+					}
+				}
+				
+				$main.innerHTML = $template;
+				$prevlink = json.previous?`<a href="${json.previous}">&#x23EA</a>`:"";
+				$nextLink = json.next?`<a href="${json.next}">&#x23E9</a>`:"";
+				$links.innerHTML = $prevlink + "   " + $nextLink;
+				
+			}catch(err){
+				console.log(err)
+			}
+		}
+		
+		d.addEventListener("DOMContentLoaded",(e)=>loadPokemon(pokeAPI));
+		d.addEventListener("click",(e)=>{
+			if(e.target.matches(".links a")){
+				e.preventDefault();
+				loadPokemon(e.target.getAttribute("href"));
+			}
+		})
+	</script>
+</body>
+</html>
